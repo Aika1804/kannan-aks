@@ -4,7 +4,7 @@ RUN mkdir /app
 
 WORKDIR /app
 
-ADD ./target/spring-boot-docker.jar /app/spring-boot-docker.jar
+ADD target/spring-boot-docker.jar /app/spring-boot-docker.jar
 
 EXPOSE 8080
 
