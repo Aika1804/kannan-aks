@@ -6,7 +6,7 @@ on:
       Tag:
         description: 'Tag of the image to test'
         required: true
-        default: 'latest'
+        default: 'rel.25.12.11'
 
 jobs:
   test-docker-image:
