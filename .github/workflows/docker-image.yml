@@ -26,9 +26,9 @@ jobs:
           password: ${{ secrets.DOCKER_PASSWORD }}
 
       - name: Pull Docker image
-        run: docker pull ${{ secrets.DOCKER_USERNAME }}/my-image:${{ inputs.Tag }}
+        run: docker pull ${{ secrets.DOCKER_USERNAME }}/aishu-docker:${{ inputs.Tag }}
 
       - name: Run tests on Docker image
         run: |
-          docker run --rm ${{ secrets.DOCKER_USERNAME }}/my-image:${{ inputs.Tag }} /bin/sh -c "echo 'Running tests...'; exit 0"
+          docker run --rm ${{ secrets.DOCKER_USERNAME }}/aishu-docker:${{ inputs.Tag }} /bin/sh -c "echo 'Running tests...'; exit 0"
 
