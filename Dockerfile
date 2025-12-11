@@ -1,14 +1,22 @@
+FROM eclipse-temurin:21-jdk-jammy AS builder
+WORKDIR /app
+COPY mvnw .
+COPY .mvn .mvn
+COPY pom.xml .
+RUN ./mvnw dependency:go-offline -B
+COPY src src
+RUN ./mvnw package -DskipTests
+
+
+
+
 FROM openjdk:26-ea-slim
 
 RUN mkdir /app
 
 WORKDIR /app
 
-COPY ./target/.*jar spring-boot-docker.jar
-
-COPY ./src/main/resources /app/
-
-COPY . . 
+COPY --from=builder /app/target/*.jar spring-boot-docker.jar
 
 EXPOSE 8080
 
