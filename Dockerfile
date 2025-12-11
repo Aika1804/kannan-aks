@@ -12,8 +12,6 @@ RUN ./mvnw package -DskipTests
 
 FROM openjdk:26-ea-slim
 
-RUN mkdir /app
-
 WORKDIR /app
 
 COPY --from=builder /app/target/*.jar spring-boot-docker.jar
