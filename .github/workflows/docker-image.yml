@@ -12,12 +12,12 @@ jobs:
   test-docker-image:
     name: Test Docker Image
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./kannan-aks
-        
-        
+      
     steps:
+      - uses: actions/checkout@v4
+      - name: Show workspace
+        run: pwd && ls -la $GITHUB_WORKSPACE
+
       - name: Log in to Docker Hub
         uses: docker/login-action@v2
         with:
