@@ -1,6 +1,14 @@
 FROM openjdk:26-ea-slim
 
-ADD target/spring-boot-docker.jar spring-boot-docker.jar
+RUN mkdir /app
+
+WORKDIR /app
+
+COPY ./target/.*jar spring-boot-docker.jar
+
+COPY ./src/main/resources /app/
+
+COPY . . 
 
 EXPOSE 8080
 
