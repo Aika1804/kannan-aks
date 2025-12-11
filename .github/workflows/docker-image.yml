@@ -12,6 +12,11 @@ jobs:
   test-docker-image:
     name: Test Docker Image
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./kannan-aks
+        
+        
     steps:
       - name: Log in to Docker Hub
         uses: docker/login-action@v2
