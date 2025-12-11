@@ -38,7 +38,7 @@ jobs:
         context: .
         push: true
         tags: |
-          ${{ secrets.DOCKERHUB_USERNAME }}/docker-aks-image:latest
+          ${{ secrets.DOCKERHUB_USERNAME }}/docker-aks-image:version_3
 
       
       
