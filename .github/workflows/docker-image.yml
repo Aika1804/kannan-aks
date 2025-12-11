@@ -34,8 +34,15 @@ jobs:
         password: ${{secrets.DOCKER_PASSWORD}}
 
     
-    - name: Push the docker image
-      run: docker push kannan1809/docker-aks-image:latest
+    
+    - name: Build and push
+      uses: docker/build-push-action@v6
+      with:
+        context: .
+        push: true
+        tags: |
+          ${{ secrets.DOCKERHUB_USERNAME }}/docker-aks-image:latest
+
       
       
 
