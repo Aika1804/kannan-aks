@@ -26,7 +26,7 @@ jobs:
 
       - name: Build Docker Image
         run: |
-          docker build -t docker-aishu:${{ inputs.Tag }} -f Dockerfile .
+          docker build -t docker-aishu:${{ inputs.Tag }} .
 
       - name: Push Docker Image
         run: |

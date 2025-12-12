@@ -1,21 +1,4 @@
-FROM eclipse-temurin:21-jdk-jammy AS builder
-WORKDIR /app
-COPY mvnw .
-COPY .mvn .mvn
-COPY pom.xml .
-RUN chmod +x mvnw
-COPY src src
-RUN ./mvnw package -DskipTests
-
-
-
-
-FROM openjdk:26-ea-slim
-
-WORKDIR /app
-
-COPY --from=builder /app/target/*.jar spring-boot-docker.jar
-
+FROM mcr.microsoft.com/openjdk/jdk:21-ubuntu
 EXPOSE 8080
-
-CMD [ "java", "-jar", "/spring-boot-docker.jar" ]
+ADD target/spring-boot-docker spring-boot-docker
+ENTRYPOINT ["java","-jar","/spring-boot-docker"]
