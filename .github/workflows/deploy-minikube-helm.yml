@@ -1,0 +1,54 @@
+name: Deploy to Minikube with Helm
+
+run-name: "[Image-tag- ${{inputs.Tag}}] [event- ${{github.event_name}}]"
+on:
+  workflow_dispatch:
+    inputs:
+      Tag:
+        description: 'Tag of the image to test'
+        required: true
+        default: 'rel.25.12.11'
+
+jobs:
+  deploy:
+    runs-on: self-hosted   # runner must have kubectl, helm, minikube
+
+    env:
+      RELEASE_NAME: kannan-aks
+      NAMESPACE: default
+      HELM_CHART_SUBPATH: kannan-aks-image  # change if chart is in subfolder (e.g. charts/kannan-aks)
+      IMAGE_REPOSITORY: kannan1809/docker-aishu
+      IMAGE_TAG: rel.25.12.11
+
+    steps:
+      - name: Checkout application repo (optional)
+        uses: actions/checkout@v4
+
+      - name: Ensure Minikube is running
+        run: |
+          if ! minikube status >/dev/null 2>&1; then
+            minikube start
+          fi
+
+      - name: Set Kubernetes context to Minikube
+        run: |
+          kubectl config use-context minikube
+
+      - name: Create namespace if not exists
+        run: |
+          kubectl get ns ${NAMESPACE} || kubectl create ns ${NAMESPACE}
+
+      - name: Checkout Helm chart repo
+        uses: actions/checkout@v4
+        with:
+          repository: Aika1804/helm-platform
+          path: helm-platform
+
+      - name: Deploy with Helm
+        working-directory: helm-platform
+        run: |
+          CHART_PATH="${HELM_CHART_SUBPATH}"
+          helm upgrade --install ${RELEASE_NAME} "${CHART_PATH}" \
+            --namespace ${NAMESPACE} \
+            --set image.repository=${IMAGE_REPOSITORY} \
+            --set image.tag=${IMAGE_TAG}
