@@ -11,7 +11,7 @@ on:
 
 jobs:
   deploy:
-    runs-on: self-hosted   # runner must have kubectl, helm, minikube
+    runs-on: ubuntu-latest   # runner must have kubectl, helm, minikube
 
     env:
       RELEASE_NAME: kannan-aks
