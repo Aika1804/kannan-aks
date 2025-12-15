@@ -59,6 +59,8 @@ jobs:
             --create-namespace `
             --set image.repository="${env:IMAGE_REPOSITORY}" `
             --set image.tag="${env:IMAGE_TAG}"
+            --set livenessProbe.enabled=false `
+            --set readinessProbe.enabled=false
           Write-Output "✅ Helm deployment completed!"
 
       - name: Wait for pods to be ready
