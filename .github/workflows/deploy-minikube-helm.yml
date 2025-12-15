@@ -11,44 +11,40 @@ on:
 
 jobs:
   deploy:
-    runs-on: ubuntu-latest   # runner must have kubectl, helm, minikube
+    #runs-on: self-hosted
+    # optional: if you gave your runner a specific label, e.g. minikube
+    runs-on: [self-hosted, minikube]
 
     env:
       RELEASE_NAME: kannan-aks
       NAMESPACE: default
-      HELM_CHART_SUBPATH: kannan-aks-image  # change if chart is in subfolder (e.g. charts/kannan-aks)
       IMAGE_REPOSITORY: kannan1809/docker-aishu
-      IMAGE_TAG: rel.25.12.11
+      IMAGE_TAG: "rel.25.12.11"
+      HELM_CHART_REPO: https://github.com/Aika1804/helm-platform.git
+      HELM_CHART_SUBPATH: kannan-aks-image
 
     steps:
-      - name: Checkout application repo (optional)
+      - name: Checkout app repo
         uses: actions/checkout@v4
 
-      - name: Ensure Minikube is running
-        run: |
-          if ! minikube status >/dev/null 2>&1; then
-            minikube start
-          fi
-
-      - name: Set Kubernetes context to Minikube
-        run: |
-          kubectl config use-context minikube
-
-      - name: Create namespace if not exists
-        run: |
-          kubectl get ns ${NAMESPACE} || kubectl create ns ${NAMESPACE}
-
-      - name: Checkout Helm chart repo
+      - name: Checkout helm chart repo
         uses: actions/checkout@v4
         with:
           repository: Aika1804/helm-platform
           path: helm-platform
 
+      - name: Ensure Minikube context
+        run: |
+          kubectl config use-context minikube
+          kubectl get nodes
+
       - name: Deploy with Helm
         working-directory: helm-platform
         run: |
           CHART_PATH="${HELM_CHART_SUBPATH}"
-          helm upgrade --install ${RELEASE_NAME} "${CHART_PATH}" \
-            --namespace ${NAMESPACE} \
-            --set image.repository=${IMAGE_REPOSITORY} \
-            --set image.tag=${IMAGE_TAG}
+          helm upgrade --install "${RELEASE_NAME}" "${CHART_PATH}" \
+            --namespace "${NAMESPACE}" \
+            --create-namespace \
+            --set image.repository="${IMAGE_REPOSITORY}" \
+            --set image.tag="${IMAGE_TAG}"
+
