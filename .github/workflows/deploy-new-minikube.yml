@@ -1,4 +1,4 @@
-name: Deploy to Minikube with Helm
+name: Deploy in production
 
 run-name: "[Image-tag- ${{ inputs.Tag }}] [event- ${{ github.event_name }}]"
 on:
