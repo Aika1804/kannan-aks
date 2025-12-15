@@ -34,9 +34,12 @@ jobs:
           path: helm-platform
 
       - name: Ensure Minikube context
+        shell: pwsh
         run: |
+          Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass -Force
+          minikube status
           kubectl config use-context minikube
-          kubectl get nodes
+
 
       - name: Deploy with Helm
         working-directory: helm-platform
