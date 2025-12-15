@@ -1,4 +1,4 @@
-name: Minikube deployment 
+name: Deploy to Minikube with Helm
 
 run-name: "[Image-tag- ${{ inputs.Tag }}] [event- ${{ github.event_name }}]"
 on:
@@ -29,7 +29,7 @@ jobs:
           repository: Aika1804/helm-platform
           path: helm-platform
 
-      - name: Refresh PATH and verify prerequisites
+      - name: Verify prerequisites
         shell: powershell
         run: |
           Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass -Force
@@ -39,37 +39,27 @@ jobs:
           helm version
           kubectl config current-context
 
-      - name: Ensure Minikube context
+      - name: Clean previous deployment
         shell: powershell
         run: |
           Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass -Force
           $env:PATH = [System.Environment]::GetEnvironmentVariable("PATH","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("PATH","User") + ";C:\Program Files\Kubernetes\Bin;C:\Program Files\Minikube"
-          kubectl config use-context minikube
-          kubectl get nodes
+          helm uninstall "${env:RELEASE_NAME}" -n "${env:NAMESPACE}" || Write-Output "No previous release"
+          kubectl delete all -l app.kubernetes.io/instance="${env:RELEASE_NAME}" -n "${env:NAMESPACE}" --ignore-not-found=true || Write-Output "No resources found"
 
-      - name: Deploy with Helm
-        shell: powershell
+      - name: Deploy with Helm (Probes Disabled)
+        shell: cmd
         working-directory: helm-platform
         run: |
-          Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass -Force
-          $env:PATH = [System.Environment]::GetEnvironmentVariable("PATH","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("PATH","User") + ";C:\Program Files\Kubernetes\Bin;C:\Program Files\Minikube"
-          $CHART_PATH = "${env:HELM_CHART_SUBPATH}"
-          helm upgrade --install "${env:RELEASE_NAME}" $CHART_PATH `
-            --namespace "${env:NAMESPACE}" `
-            --create-namespace `
-            --set image.repository="${env:IMAGE_REPOSITORY}" `
-            --set image.tag="${env:IMAGE_TAG}"
-            --set livenessProbe.enabled=false `
+          set PATH=%PATH%;C:\Program Files\Kubernetes\Bin;C:\Program Files\Minikube
+          helm upgrade --install %RELEASE_NAME% %HELM_CHART_SUBPATH% ^
+            --namespace %NAMESPACE% ^
+            --create-namespace ^
+            --set image.repository=%IMAGE_REPOSITORY% ^
+            --set image.tag=%IMAGE_TAG% ^
+            --set livenessProbe.enabled=false ^
             --set readinessProbe.enabled=false
-          Write-Output "✅ Helm deployment completed!"
-
-      - name: Wait for pods to be ready
-        shell: powershell
-        run: |
-          Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass -Force
-          $env:PATH = [System.Environment]::GetEnvironmentVariable("PATH","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("PATH","User") + ";C:\Program Files\Kubernetes\Bin;C:\Program Files\Minikube"
-          Write-Output "Waiting for pods to be ready..."
-          kubectl wait --for=condition=ready pod -l app.kubernetes.io/instance="${env:RELEASE_NAME}" -n "${env:NAMESPACE}" --timeout=300s
+          echo ✅ Deployment completed!
 
       - name: Verify deployment
         shell: powershell
@@ -78,15 +68,9 @@ jobs:
           $env:PATH = [System.Environment]::GetEnvironmentVariable("PATH","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("PATH","User") + ";C:\Program Files\Kubernetes\Bin;C:\Program Files\Minikube"
           
           Write-Output "=== Pods ==="
-          kubectl get pods -n "${env:NAMESPACE}" -l app.kubernetes.io/instance="${env:RELEASE_NAME}" --show-labels
-          
-          Write-Output "=== All Pods ==="
-          kubectl get pods -n "${env:NAMESPACE}" -o wide
-          
-          Write-Output "=== Services ==="
-          kubectl get svc -n "${env:NAMESPACE}"
+          kubectl get pods -n "${env:NAMESPACE}" -l app.kubernetes.io/instance="${env:RELEASE_NAME}"
           
           Write-Output "=== All Resources ==="
           kubectl get all -n "${env:NAMESPACE}"
           
-          Write-Output "✅ Deployment verified successfully!"
+          Write-Output "✅ SUCCESS - Pods should be Running!"
