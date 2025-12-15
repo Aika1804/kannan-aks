@@ -1,0 +1,88 @@
+name: New Deployment
+
+run-name: "[Image-tag- ${{ inputs.Tag }}] [event- ${{ github.event_name }}]"
+on:
+  workflow_dispatch:
+    inputs:
+      Tag:
+        description: 'Tag of the image to test'
+        required: true
+        default: 'rel.25.12.11'
+
+jobs:
+  deploy:
+    runs-on: self-hosted
+    env:
+      RELEASE_NAME: kannan-aks
+      NAMESPACE: default
+      IMAGE_REPOSITORY: kannan1809/docker-aishu
+      IMAGE_TAG: ${{ inputs.Tag }}
+      HELM_CHART_REPO: https://github.com/Aika1804/helm-platform.git
+      HELM_CHART_SUBPATH: kannan-aks-image
+
+    steps:
+      - name: Checkout app repo
+        uses: actions/checkout@v4
+
+      - name: Checkout helm chart repo
+        uses: actions/checkout@v4
+        with:
+          repository: Aika1804/helm-platform
+          path: helm-platform
+
+      - name: Install Kubernetes tools via Chocolatey
+        shell: powershell
+        run: |
+          # Install Chocolatey if not present
+          if (!(Get-Command choco -ErrorAction SilentlyContinue)) {
+            Set-ExecutionPolicy Bypass -Scope Process -Force
+            [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
+            iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
+          }
+          # Install required tools
+          choco install kubernetes-cli minikube helm -y --force
+
+      - name: Verify tools installation
+        shell: powershell
+        run: |
+          $env:PATH = [System.Environment]::GetEnvironmentVariable("PATH","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("PATH","User")
+          kubectl version --client
+          minikube status || Write-Output "Minikube not running, starting..."
+          helm version
+
+      - name: Ensure Minikube context
+        shell: powershell
+        run: |
+          Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass -Force
+          $env:PATH = [System.Environment]::GetEnvironmentVariable("PATH","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("PATH","User")
+          minikube status
+          kubectl config use-context minikube
+          kubectl get nodes
+
+      - name: Start Minikube (if needed)
+        shell: powershell
+        run: |
+          Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass -Force
+          minikube start --driver=docker || Write-Output "Minikube already running"
+          kubectl config use-context minikube
+
+      - name: Deploy with Helm
+        shell: powershell
+        working-directory: helm-platform
+        run: |
+          Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass -Force
+          $CHART_PATH = "${env:HELM_CHART_SUBPATH}"
+          helm upgrade --install "${env:RELEASE_NAME}" $CHART_PATH `
+            --namespace "${env:NAMESPACE}" `
+            --create-namespace `
+            --set image.repository="${env:IMAGE_REPOSITORY}" `
+            --set image.tag="${env:IMAGE_TAG}"
+          Write-Output "Deployment completed successfully!"
+
+      - name: Verify deployment
+        shell: powershell
+        run: |
+          Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass -Force
+          kubectl get pods -n "${env:NAMESPACE}" -l app.kubernetes.io/name="${env:RELEASE_NAME}"
+          kubectl get svc -n "${env:NAMESPACE}" -l app.kubernetes.io/name="${env:RELEASE_NAME}"
+          minikube service "${env:RELEASE_NAME}" --url -n "${env:NAMESPACE}"
