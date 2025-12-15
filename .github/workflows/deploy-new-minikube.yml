@@ -1,4 +1,4 @@
-name: Deploy to Minikube with Helm
+name: Minikube deployment 
 
 run-name: "[Image-tag- ${{ inputs.Tag }}] [event- ${{ github.event_name }}]"
 on:
@@ -59,13 +59,32 @@ jobs:
             --create-namespace `
             --set image.repository="${env:IMAGE_REPOSITORY}" `
             --set image.tag="${env:IMAGE_TAG}"
-          Write-Output "✅ Deployment completed!"
+          Write-Output "✅ Helm deployment completed!"
+
+      - name: Wait for pods to be ready
+        shell: powershell
+        run: |
+          Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass -Force
+          $env:PATH = [System.Environment]::GetEnvironmentVariable("PATH","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("PATH","User") + ";C:\Program Files\Kubernetes\Bin;C:\Program Files\Minikube"
+          Write-Output "Waiting for pods to be ready..."
+          kubectl wait --for=condition=ready pod -l app.kubernetes.io/instance="${env:RELEASE_NAME}" -n "${env:NAMESPACE}" --timeout=300s
 
       - name: Verify deployment
         shell: powershell
         run: |
           Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass -Force
           $env:PATH = [System.Environment]::GetEnvironmentVariable("PATH","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("PATH","User") + ";C:\Program Files\Kubernetes\Bin;C:\Program Files\Minikube"
-          kubectl get pods -n "${env:NAMESPACE}" -l app.kubernetes.io/name="${env:RELEASE_NAME}"
-          kubectl get svc -n "${env:NAMESPACE}" -l app.kubernetes.io/name="${env:RELEASE_NAME}"
-          minikube service "${env:RELEASE_NAME}" --url -n "${env:NAMESPACE}"
+          
+          Write-Output "=== Pods ==="
+          kubectl get pods -n "${env:NAMESPACE}" -l app.kubernetes.io/instance="${env:RELEASE_NAME}" --show-labels
+          
+          Write-Output "=== All Pods ==="
+          kubectl get pods -n "${env:NAMESPACE}" -o wide
+          
+          Write-Output "=== Services ==="
+          kubectl get svc -n "${env:NAMESPACE}"
+          
+          Write-Output "=== All Resources ==="
+          kubectl get all -n "${env:NAMESPACE}"
+          
+          Write-Output "✅ Deployment verified successfully!"
