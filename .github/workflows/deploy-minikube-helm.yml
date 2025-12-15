@@ -11,9 +11,9 @@ on:
 
 jobs:
   deploy:
-    #runs-on: self-hosted
+    runs-on: self-hosted
     # optional: if you gave your runner a specific label, e.g. minikube
-    runs-on: [self-hosted, minikube]
+    #runs-on: [self-hosted, minikube]
 
     env:
       RELEASE_NAME: kannan-aks
